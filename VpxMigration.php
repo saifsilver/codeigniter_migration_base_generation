@@ -4,7 +4,7 @@ if (!defined('BASEPATH'))
     exit('No direct script access allowed');
 
 /**
- * Vpx Migration Library (Improved As Per CI3)
+ * Webby Migration Library (Improved As Per CI3)
  *
  * Create a base file for migrations to start off with;
  *
@@ -13,7 +13,7 @@ if (!defined('BASEPATH'))
  * @version 0.5 Beta
  *
  */
-class VpxMigration {
+class WebbyMigration {
 
     var $db_user;
     var $db_pass;
@@ -71,7 +71,7 @@ class VpxMigration {
      * @param string $tables
      * @return boolean|string
      */
-    function generate($tables = null) {
+    function generate($tables = null, $version_name = '001_create_base') {
         if ($tables)
             $this->tables = $tables;
 
@@ -177,8 +177,8 @@ class VpxMigration {
                 return;
             }
 
-            //$file_path = $path . '/001_create_' . $table . '.php';
-            $file_path = $path . '/001_create_base.php';
+            $file_path = $path . '/'.$version_name.'.php';   
+
             $file = fopen($file_path, 'w+');
 
             if (!$file)
