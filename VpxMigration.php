@@ -4,13 +4,13 @@ if (!defined('BASEPATH'))
     exit('No direct script access allowed');
 
 /**
- * Vpx Migration Library
+ * Vpx Migration Library (Improved As Per CI3)
  *
  * Create a base file for migrations to start off with;
  *
- * @author Liaan vd Merwe <info@vpx.co.za>
+ * @author Saif Sulaiman <saif@webberoo.in> 
  * @license Free to use and abuse
- * @version 0.4 Beta
+ * @version 0.5 Beta
  *
  */
 class VpxMigration {
@@ -214,19 +214,53 @@ class VpxMigration {
 
 
             $up .= "\n\t\t" . '## Create Table ' . $table . "\n";
-            foreach ($columns as $column)
-            {
-                $up .= "\t\t" . '$this->dbforge->add_field("' . "`$column[Field]` $column[Type] " . ($column['Null'] == 'NO' ? 'NOT NULL' : 'NULL') .
-                        (
-                        #  if its timestamp column, don't '' around default value .... crap way, but should work for now
-                        $column['Default'] ? ' DEFAULT ' . ($column['Type'] == 'timestamp' ? $column['Default'] : '\'' . $column['Default'] . '\'') : ''
-                        )
-                        . " $column[Extra]\");" . "\n";
 
-                if ($column['Key'] == 'PRI')
-                    $up .= "\t\t" . '$this->dbforge->add_key("' . $column['Field'] . '",true);' . "\n";
+            if(!empty($columns)){
+                $up .= "\n\t\t" . '$this->dbforge->add_field(array(';     
+                $keys = '';      
+                foreach ($columns as $column)
+                {
+
+                    $type = explode(' ',$column['Type']);
+
+                    $type0_arr = explode('(',$type[0]);
+
+                    $constrain = '';
+                    if(isset($type0_arr[1])){
+                        $constrain = "'constraint'        => '".str_replace(')', '', $type0_arr[1])."',";
+                    } else {
+                        $constrain = "'constraint'        => FALSE,";
+                    }
+
+                    $default = ($column['Default'] ? ($column['Type'] == 'timestamp' ? $column['Default'] : '\'' . $column['Default'] . '\'') : FALSE);
+                    if($default == FALSE){
+                        $default ='';
+                    } else {
+                        $default ="'default'           => $default";
+                    }
+
+                    $up .= 
+    "\n\t\t\t"."'$column[Field]' => array(
+                'type'              => '$type0_arr[0]',
+                'null'              => ".($column['Null'] == 'NO'?'TRUE':'FALSE').",
+                $constrain
+                'unsigned'          => ".(isset($type[1]) && $type[1] == 'unsigned'?'TRUE':'FALSE').",
+                'auto_increment'    => ".($column['Extra'] == 'auto_increment'?'TRUE':'FALSE').",
+                'unique'            => ".($column['Extra'] == 'unique'?'TRUE':'FALSE').",
+                $default
+            ),";
+
+                    if ($column['Key'] == 'PRI'){
+                        $keys .= "\n\t\t" . '$this->dbforge->add_key("' . $column['Field'] . '",TRUE);';
+                    } else if(!empty($column['Key'])) {
+                        $keys .= "\n\t\t" . '$this->dbforge->add_key("' . $column['Field'] . '",FALSE);';
+                    }
+                }     
             }
-            $up .= "\t\t" . '$this->dbforge->create_table("' . $table . '", TRUE);' . "\n";
+
+            $up .= "\n\t\t" .'));';
+            $up .= "\n\t\t" .$keys;
+            $up .= "\n\t\t" . '$this->dbforge->create_table("' . $table . '", TRUE);' . "\n";
             if (isset($engines['Engine']) and $engines['Engine'])
                 $up .= "\t\t" . '$this->db->query(\'ALTER TABLE  ' . $this->ci->db_master->protect_identifiers($table) . ' ENGINE = ' . $engines['Engine']. '\');';
 
